@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import AppLayout from '@/Layouts/AppLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useState } from 'react';
 
@@ -69,7 +69,7 @@ export default function Show({ project, tasks, users }) {
     };
 
     return (
-        <AppLayout>
+        <AuthenticatedLayout>
             <div className="mb-6 flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
@@ -166,7 +166,7 @@ export default function Show({ project, tasks, users }) {
             </DragDropContext>
 
             {showCreateModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full">
                         <h2 className="text-2xl font-bold mb-4">Create Task</h2>
                         <form onSubmit={handleCreateTask}>
@@ -264,6 +264,6 @@ export default function Show({ project, tasks, users }) {
                     </div>
                 </div>
             )}
-        </AppLayout>
+        </AuthenticatedLayout>
     );
 }

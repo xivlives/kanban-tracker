@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import ApplicationLogo from '@/Components/ApplicationLogo';
 
 export default function Welcome({ auth }) {
     return (
@@ -8,9 +9,7 @@ export default function Welcome({ auth }) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
-                            <h1 className="text-2xl font-bold text-white">
-                                Kanban Tracker
-                            </h1>
+                            <ApplicationLogo className="block h-9 w-auto" />
                         </div>
                         <div className="flex items-center gap-4">
                             {auth.user ? (
