@@ -24,6 +24,10 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
         ]);
 
+        // 'exists' validation bypasses Eloquent global scopes, so confirm the target
+        // project actually belongs to the authenticated user (404s otherwise).
+        $request->user()->projects()->findOrFail($validated['project_id']);
+
         $this->taskService->createTask($validated);
 
         return back()->with('success', 'Task created successfully.');
@@ -31,6 +35,8 @@ class TaskController extends Controller
 
     public function update(Request $request, Task $task): RedirectResponse
     {
+        $this->authorizeTaskOwnership($request, $task);
+
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
@@ -46,6 +52,8 @@ class TaskController extends Controller
 
     public function updateStatus(Request $request, Task $task): RedirectResponse
     {
+        $this->authorizeTaskOwnership($request, $task);
+
         $validated = $request->validate([
             'status' => 'required|in:pending,in-progress,done',
         ]);
@@ -55,10 +63,24 @@ class TaskController extends Controller
         return back();
     }
 
-    public function destroy(Task $task): RedirectResponse
+    public function destroy(Request $request, Task $task): RedirectResponse
     {
+        $this->authorizeTaskOwnership($request, $task);
+
         $this->taskService->deleteTask($task);
 
         return back()->with('success', 'Task deleted successfully.');
+    }
+
+    /**
+     * A task belongs to a user only through its project. Tasks have no global scope,
+     * so a direct /tasks/{task} URL must be checked against the user's own projects.
+     */
+    protected function authorizeTaskOwnership(Request $request, Task $task): void
+    {
+        abort_unless(
+            $request->user()->projects()->whereKey($task->project_id)->exists(),
+            403
+        );
     }
 }

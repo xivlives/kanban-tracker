@@ -1,4 +1,4 @@
-# TRIGO. Kanban Task Tracker
+# MeenitsTrac Kanban Task Tracker
 
 A full-featured Kanban board application built with Laravel 11, Inertia.js, and React. Designed for small to medium engineering teams to manage projects, track tasks with drag-and-drop functionality, and generate automated daily reports.
 
@@ -76,7 +76,7 @@ Edit `.env` file with your database credentials:
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=tracklyy
+DB_DATABASE=meenitstrac
 DB_USERNAME=your_username
 DB_PASSWORD=your_password
 ```
@@ -86,7 +86,7 @@ DB_PASSWORD=your_password
 DB_CONNECTION=sqlite
 # DB_HOST=127.0.0.1
 # DB_PORT=3306
-# DB_DATABASE=tracklyy
+# DB_DATABASE=meenitstrac
 # DB_USERNAME=root
 # DB_PASSWORD=
 ```

@@ -11,10 +11,11 @@ use Inertia\Response;
 
 class ProjectController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $projects = Project::withCount('tasks')->get();
-        
+        // Only the authenticated user's projects (also enforced by the model's global scope).
+        $projects = $request->user()->projects()->withCount('tasks')->get();
+
         return Inertia::render('Projects/Index', [
             'projects' => $projects,
         ]);
@@ -22,6 +23,10 @@ class ProjectController extends Controller
 
     public function show(Project $project): Response
     {
+        // The 'owner' global scope already 404s another user's project on route binding;
+        // this is an explicit defence-in-depth guard.
+        abort_unless($project->user_id === auth()->id(), 403);
+
         $tasks = $project->tasks()
             ->with('assignedUser')
             ->orderBy('created_at', 'desc')
@@ -48,7 +53,8 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $project = Project::create($validated);
+        // Always own the project to the authenticated user.
+        $project = $request->user()->projects()->create($validated);
 
         return redirect()->route('projects.show', $project)
             ->with('success', 'Project created successfully.');
@@ -56,6 +62,8 @@ class ProjectController extends Controller
 
     public function update(Request $request, Project $project): RedirectResponse
     {
+        abort_unless($project->user_id === auth()->id(), 403);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -68,6 +76,8 @@ class ProjectController extends Controller
 
     public function destroy(Project $project): RedirectResponse
     {
+        abort_unless($project->user_id === auth()->id(), 403);
+
         $project->delete();
 
         return redirect()->route('dashboard')

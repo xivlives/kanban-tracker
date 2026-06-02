@@ -1,6 +1,6 @@
-# Principal Engineer Skills — MeenitsTrac (TRIGO)
+# Principal Engineer Skills — MeenitsTrac
 
-> Skills demonstrated in the architecture, design, and implementation of **MeenitsTrac (TRIGO)** — a Kanban task tracker for engineering teams, built with Laravel 12, Inertia.js, React, and Tailwind CSS.
+> Skills demonstrated in the architecture, design, and implementation of **MeenitsTrac** — a Kanban task tracker for engineering teams, built with Laravel 12, Inertia.js, React, and Tailwind CSS.
 
 ---
 
