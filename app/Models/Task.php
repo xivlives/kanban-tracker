@@ -16,10 +16,14 @@ class Task extends Model
         'status',
         'assigned_to',
         'due_date',
+        'source_app',
+        'source_ref',
+        'external_id',
     ];
 
     protected $casts = [
         'due_date' => 'date',
+        'source_ref' => 'array',
     ];
 
     public function project()
