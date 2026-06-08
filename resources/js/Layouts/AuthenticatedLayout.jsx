@@ -42,6 +42,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Reports
                                 </NavLink>
+                                <NavLink
+                                    href={route("integration.index")}
+                                    active={route().current("integration.*")}
+                                >
+                                    Integration
+                                </NavLink>
                             </div>
                         </div>
 

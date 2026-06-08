@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ReportController;
@@ -41,6 +42,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Reports
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::post('reports/generate', [ReportController::class, 'generate'])->name('reports.generate');
+
+    // Meenits integration — mint/revoke API tokens for the action-item push
+    Route::get('integration', [IntegrationController::class, 'index'])->name('integration.index');
+    Route::post('integration/tokens', [IntegrationController::class, 'storeToken'])->name('integration.tokens.store');
+    Route::delete('integration/tokens/{id}', [IntegrationController::class, 'destroyToken'])->name('integration.tokens.destroy');
 });
 
 require __DIR__.'/auth.php';
