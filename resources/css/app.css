@@ -1,3 +1,59 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================================
+   MeenitsTrac brand palette (OKLCH) — converted from:
+   #39B1D1 primary · #D6FB61 accent · #F6850C orange · #DE3E3E danger
+   ============================================================ */
+:root {
+    /* Primary (cyan #39B1D1) + derived shades for gradients/depth */
+    --trac-primary: oklch(70.83% 0.1126 219.7);
+    --trac-primary-600: oklch(60.00% 0.1150 220.0);
+    --trac-primary-800: oklch(43.00% 0.0950 221.0);
+    --trac-primary-950: oklch(26.00% 0.0560 222.0);
+
+    --trac-accent: oklch(93.28% 0.1821 121.5);   /* lime #D6FB61 */
+    --trac-orange: oklch(72.76% 0.1740 56.8);     /* #F6850C */
+    --trac-danger: oklch(60.18% 0.1971 25.4);     /* #DE3E3E */
+
+    --trac-ink: oklch(22.00% 0.0300 222.0);       /* deep cyan-ink text */
+}
+
+/* Brand gradient used by the auth split panel */
+.trac-brand-gradient {
+    background: linear-gradient(150deg,
+        var(--trac-primary-950) 0%,
+        var(--trac-primary-800) 55%,
+        var(--trac-primary-600) 130%);
+}
+
+/* Primary action color helpers */
+.trac-bg-primary { background-color: var(--trac-primary); }
+.trac-text-primary { color: var(--trac-primary); }
+.trac-text-accent { color: var(--trac-accent); }
+
+/* Brand-coloured primary button (overrides Breeze's gray) */
+.trac-btn-primary {
+    background-color: var(--trac-primary);
+    color: #fff;
+    transition: background-color .15s ease-in-out;
+}
+.trac-btn-primary:hover { background-color: var(--trac-primary-600); }
+.trac-btn-primary:active { background-color: var(--trac-primary-800); }
+.trac-btn-primary:focus { outline: none; box-shadow: 0 0 0 3px oklch(70.83% 0.1126 219.7 / 0.4); }
+
+/* Auth split: stacks on mobile (brand strip on top, form below); side-by-side md+ */
+.auth-split { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+.auth-split-brand { display: none; }
+@media (min-width: 768px) {
+    .auth-split { flex-direction: row; }
+    .auth-split-brand { display: flex; }
+    .auth-split-strip { display: none !important; }
+}
+
+/* Brand-tinted focus for Breeze inputs (replaces the default indigo) */
+.trac-input:focus {
+    border-color: var(--trac-primary) !important;
+    box-shadow: 0 0 0 1px var(--trac-primary) !important;
+}
