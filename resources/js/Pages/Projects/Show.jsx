@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import SidebarLayout from '@/Layouts/SidebarLayout';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useState } from 'react';
 
@@ -14,9 +14,9 @@ export default function Show({ project, tasks, users }) {
     });
 
     const columns = {
-        pending: { title: 'Pending', color: 'bg-yellow-50 border-yellow-200' },
-        'in-progress': { title: 'In Progress', color: 'bg-blue-50 border-blue-200' },
-        done: { title: 'Done', color: 'bg-green-50 border-green-200' },
+        pending: { title: 'Pending', color: 'bg-gray-100 border-gray-200 text-gray-700' },
+        'in-progress': { title: 'In Progress', color: 'bg-[oklch(93.28%_0.1821_121.5/0.2)] border-[oklch(93.28%_0.1821_121.5/0.4)] text-[var(--trac-ink)]' },
+        done: { title: 'Done', color: 'bg-green-50 border-green-200 text-green-800' },
     };
 
     const handleDragEnd = (result) => {
@@ -69,7 +69,7 @@ export default function Show({ project, tasks, users }) {
     };
 
     return (
-        <AuthenticatedLayout>
+        <SidebarLayout>
             <div className="mb-6 flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
@@ -77,7 +77,7 @@ export default function Show({ project, tasks, users }) {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="trac-btn-primary rounded-lg px-4 py-2 font-semibold shadow-sm"
                 >
                     Add Task
                 </button>
@@ -101,10 +101,10 @@ export default function Show({ project, tasks, users }) {
                                     <div
                                         ref={provided.innerRef}
                                         {...provided.droppableProps}
-                                        className={`flex-1 rounded-lg border-2 border-dashed p-4 min-h-[500px] ${
+                                        className={`flex-1 rounded-2xl border-2 border-dashed p-4 min-h-[500px] ${
                                             column.color
                                         } ${
-                                            snapshot.isDraggingOver ? 'ring-2 ring-blue-400' : ''
+                                            snapshot.isDraggingOver ? 'ring-2 ring-[var(--trac-primary)] bg-white/50' : ''
                                         }`}
                                     >
                                         <div className="space-y-3">
@@ -119,11 +119,11 @@ export default function Show({ project, tasks, users }) {
                                                             ref={provided.innerRef}
                                                             {...provided.draggableProps}
                                                             {...provided.dragHandleProps}
-                                                            className={`bg-white rounded-lg p-4 shadow-sm border border-gray-200 ${
+                                                            className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 ${
                                                                 snapshot.isDragging
-                                                                    ? 'shadow-lg ring-2 ring-blue-400'
-                                                                    : 'hover:shadow-md'
-                                                            } transition-shadow cursor-move`}
+                                                                    ? 'shadow-xl ring-2 ring-[var(--trac-primary)] scale-[1.02]'
+                                                                    : 'hover:shadow-md hover:border-gray-200'
+                                                            } transition-all cursor-move`}
                                                         >
                                                             <div className="flex justify-between items-start mb-2">
                                                                 <h3 className="font-medium text-gray-900">
@@ -137,9 +137,27 @@ export default function Show({ project, tasks, users }) {
                                                                 </button>
                                                             </div>
                                                             {task.description && (
-                                                                <p className="text-sm text-gray-600 mb-3">
+                                                                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                                                                     {task.description}
                                                                 </p>
+                                                            )}
+                                                            {task.source_ref?.meeting_title && (
+                                                                <div className="mb-4 rounded-lg bg-[var(--trac-primary-950)] p-3 text-white trac-brand-gradient">
+                                                                    <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--trac-accent)] uppercase tracking-wider mb-1">
+                                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                                        </svg>
+                                                                        From Meeting
+                                                                    </div>
+                                                                    <div className="text-sm font-medium line-clamp-1 truncate">
+                                                                        {task.source_ref.meeting_title}
+                                                                    </div>
+                                                                    {task.source_ref.meeting_url && (
+                                                                        <a href={task.source_ref.meeting_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center text-xs font-semibold text-white/80 hover:text-white transition-colors">
+                                                                            View transcript &rarr;
+                                                                        </a>
+                                                                    )}
+                                                                </div>
                                                             )}
                                                             <div className="flex items-center justify-between text-xs text-gray-500">
                                                                 {task.assigned_user && (
@@ -255,7 +273,7 @@ export default function Show({ project, tasks, users }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    className="trac-btn-primary rounded-lg px-4 py-2 font-semibold"
                                 >
                                     Create Task
                                 </button>
@@ -264,6 +282,6 @@ export default function Show({ project, tasks, users }) {
                     </div>
                 </div>
             )}
-        </AuthenticatedLayout>
+        </SidebarLayout>
     );
 }

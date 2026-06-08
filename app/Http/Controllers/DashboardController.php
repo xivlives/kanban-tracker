@@ -22,8 +22,15 @@ class DashboardController extends Controller
 
         Log::info('Projects loaded', ['count' => $projects->count()]);
 
+        $myTasks = \App\Models\Task::where('assigned_to', auth()->id())
+            ->where('status', '!=', 'done')
+            ->with('project')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return Inertia::render('Dashboard', [
             'projects' => $projects,
+            'myTasks' => $myTasks,
         ]);
     }
 }

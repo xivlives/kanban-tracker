@@ -1,10 +1,10 @@
 import { Link } from '@inertiajs/react';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import SidebarLayout from '@/Layouts/SidebarLayout';
 import { Head } from '@inertiajs/react';
 
 export default function Index({ projects }) {
     return (
-        <AuthenticatedLayout
+        <SidebarLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
                     All Projects
@@ -78,6 +78,6 @@ export default function Index({ projects }) {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </SidebarLayout>
     );
 }

@@ -1,4 +1,4 @@
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import SidebarLayout from "@/Layouts/SidebarLayout";
 import { Head, useForm, router } from "@inertiajs/react";
 import { useState } from "react";
 import PrimaryButton from "@/Components/PrimaryButton";
@@ -27,7 +27,7 @@ export default function Integration({ tokens = [], newToken = null, meenitsUrl }
     };
 
     return (
-        <AuthenticatedLayout
+        <SidebarLayout
             header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Meenits Integration</h2>}
         >
             <Head title="Meenits Integration" />
@@ -98,6 +98,6 @@ export default function Integration({ tokens = [], newToken = null, meenitsUrl }
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </SidebarLayout>
     );
 }

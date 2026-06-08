@@ -1,9 +1,9 @@
 import { Link, router } from "@inertiajs/react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import SidebarLayout from "@/Layouts/SidebarLayout";
 import { Head } from "@inertiajs/react";
 import { useState } from "react";
 
-export default function Dashboard({ projects = [] }) {
+export default function Dashboard({ projects = [], myTasks = [] }) {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [formData, setFormData] = useState({ name: "", description: "" });
     const [processing, setProcessing] = useState(false);
@@ -30,7 +30,7 @@ export default function Dashboard({ projects = [] }) {
         p.tasks_count > 0 ? Math.round(((p.done_tasks_count || 0) / p.tasks_count) * 100) : 0;
 
     return (
-        <AuthenticatedLayout
+        <SidebarLayout
             header={
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold leading-tight text-gray-800">Dashboard</h2>
@@ -66,7 +66,11 @@ export default function Dashboard({ projects = [] }) {
                         </p>
                     </div>
 
-                    {projects.length === 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Left column: Projects (2/3 width) */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <h3 className="text-xl font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">Your boards</h3>
+                            {projects.length === 0 ? (
                         <div className="rounded-2xl bg-white py-16 text-center shadow-sm ring-1 ring-gray-100">
                             <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
@@ -80,9 +84,9 @@ export default function Dashboard({ projects = [] }) {
                                 New Project
                             </button>
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            {projects.map((project) => (
+                            ) : (
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    {projects.map((project) => (
                                 <Link
                                     key={project.id}
                                     href={route("projects.show", project.id)}
@@ -117,8 +121,50 @@ export default function Dashboard({ projects = [] }) {
                                     </div>
                                 </Link>
                             ))}
+                                </div>
+                            )}
                         </div>
-                    )}
+
+                        {/* Right column: My Focus (1/3 width) */}
+                        <div className="lg:col-span-1">
+                            <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 overflow-hidden sticky top-6">
+                                <div className="border-b border-gray-100 bg-gray-50/50 px-6 py-5 flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-[var(--trac-ink)]">My Focus</h3>
+                                    <span className="bg-[var(--trac-primary-100)] text-[var(--trac-primary-800)] text-xs font-bold px-2 py-1 rounded-full">
+                                        {myTasks.length} pending
+                                    </span>
+                                </div>
+                                <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+                                    {myTasks.length === 0 ? (
+                                        <div className="p-8 text-center text-gray-500 text-sm">
+                                            You have no pending tasks. Great job!
+                                        </div>
+                                    ) : (
+                                        myTasks.map(task => (
+                                            <Link key={task.id} href={route("projects.show", task.project_id)} className="block p-5 hover:bg-gray-50 transition-colors">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <h4 className="font-semibold text-gray-900 text-sm leading-snug">{task.title}</h4>
+                                                    {task.source_app === 'MeenitsApp' && (
+                                                        <span title="From Meenits Meeting" className="shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-[var(--trac-accent)] text-[var(--trac-ink)]">
+                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                            </svg>
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-gray-500 mb-2 line-clamp-1">{task.project?.name}</div>
+                                                {task.due_date && (
+                                                    <div className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
+                                                        Due: {task.due_date}
+                                                    </div>
+                                                )}
+                                            </Link>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -169,7 +215,7 @@ export default function Dashboard({ projects = [] }) {
                     </div>
                 </div>
             )}
-        </AuthenticatedLayout>
+        </SidebarLayout>
     );
 }
 
