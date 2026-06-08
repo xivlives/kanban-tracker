@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Services\TaskService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
@@ -16,16 +17,16 @@ class TaskController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'project_id' => 'required|exists:projects,id',
-            'title' => 'required|string|max:255',
+            'project_id'  => 'required|exists:projects,id',
+            'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:pending,in-progress,done',
+            'status'      => 'required|in:pending,in-progress,in-review,done',
+            'label'       => 'nullable|string|max:50',
+            'priority'    => 'nullable|in:low,medium,high,urgent',
             'assigned_to' => 'nullable|exists:users,id',
-            'due_date' => 'nullable|date',
+            'due_date'    => 'nullable|date',
         ]);
 
-        // 'exists' validation bypasses Eloquent global scopes, so confirm the target
-        // project actually belongs to the authenticated user (404s otherwise).
         $request->user()->projects()->findOrFail($validated['project_id']);
 
         $this->taskService->createTask($validated);
@@ -38,11 +39,13 @@ class TaskController extends Controller
         $this->authorizeTaskOwnership($request, $task);
 
         $validated = $request->validate([
-            'title' => 'sometimes|required|string|max:255',
+            'title'       => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'sometimes|required|in:pending,in-progress,done',
+            'status'      => 'sometimes|required|in:pending,in-progress,in-review,done',
+            'label'       => 'nullable|string|max:50',
+            'priority'    => 'nullable|in:low,medium,high,urgent',
             'assigned_to' => 'nullable|exists:users,id',
-            'due_date' => 'nullable|date',
+            'due_date'    => 'nullable|date',
         ]);
 
         $this->taskService->updateTask($task, $validated);
@@ -55,12 +58,38 @@ class TaskController extends Controller
         $this->authorizeTaskOwnership($request, $task);
 
         $validated = $request->validate([
-            'status' => 'required|in:pending,in-progress,done',
+            'status' => 'required|in:pending,in-progress,in-review,done',
         ]);
 
         $this->taskService->updateTaskStatus($task, $validated['status']);
 
         return back();
+    }
+
+    /**
+     * Reorder tasks within a column after a drag & drop.
+     * Accepts an array of { id, sort_order } for the destination column.
+     */
+    public function reorder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'tasks'              => 'required|array',
+            'tasks.*.id'         => 'required|integer|exists:tasks,id',
+            'tasks.*.sort_order' => 'required|integer|min:0',
+        ]);
+
+        foreach ($validated['tasks'] as $item) {
+            $task = Task::find($item['id']);
+            if ($task) {
+                // Verify ownership through project
+                $ownsProject = $request->user()->projects()->whereKey($task->project_id)->exists();
+                if ($ownsProject) {
+                    $task->update(['sort_order' => $item['sort_order']]);
+                }
+            }
+        }
+
+        return response()->json(['status' => 'ok']);
     }
 
     public function destroy(Request $request, Task $task): RedirectResponse
@@ -72,10 +101,6 @@ class TaskController extends Controller
         return back()->with('success', 'Task deleted successfully.');
     }
 
-    /**
-     * A task belongs to a user only through its project. Tasks have no global scope,
-     * so a direct /tasks/{task} URL must be checked against the user's own projects.
-     */
     protected function authorizeTaskOwnership(Request $request, Task $task): void
     {
         abort_unless(

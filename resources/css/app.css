@@ -9,6 +9,9 @@
 :root {
     /* Primary (cyan #39B1D1) + derived shades for gradients/depth */
     --trac-primary: oklch(70.83% 0.1126 219.7);
+    --trac-primary-50:  oklch(96% 0.02 220);
+    --trac-primary-100: oklch(92% 0.04 220);
+    --trac-primary-200: oklch(85% 0.07 220);
     --trac-primary-600: oklch(60.00% 0.1150 220.0);
     --trac-primary-800: oklch(43.00% 0.0950 221.0);
     --trac-primary-950: oklch(26.00% 0.0560 222.0);
@@ -16,6 +19,7 @@
     --trac-accent: oklch(93.28% 0.1821 121.5);   /* lime #D6FB61 */
     --trac-orange: oklch(72.76% 0.1740 56.8);     /* #F6850C */
     --trac-danger: oklch(60.18% 0.1971 25.4);     /* #DE3E3E */
+    --trac-success: oklch(65% 0.17 150);           /* green */
 
     --trac-ink: oklch(22.00% 0.0300 222.0);       /* deep cyan-ink text */
 }
@@ -28,22 +32,124 @@
         var(--trac-primary-600) 130%);
 }
 
-/* Primary action color helpers */
+/* ============================================================
+   Primary action color helpers
+   ============================================================ */
 .trac-bg-primary { background-color: var(--trac-primary); }
 .trac-text-primary { color: var(--trac-primary); }
 .trac-text-accent { color: var(--trac-accent); }
 
-/* Brand-coloured primary button (overrides Breeze's gray) */
+/* Brand-coloured primary button */
 .trac-btn-primary {
     background-color: var(--trac-primary);
     color: #fff;
-    transition: background-color .15s ease-in-out;
+    transition: background-color .15s ease-in-out, transform .1s;
 }
 .trac-btn-primary:hover { background-color: var(--trac-primary-600); }
-.trac-btn-primary:active { background-color: var(--trac-primary-800); }
+.trac-btn-primary:active { background-color: var(--trac-primary-800); transform: scale(0.98); }
 .trac-btn-primary:focus { outline: none; box-shadow: 0 0 0 3px oklch(70.83% 0.1126 219.7 / 0.4); }
 
-/* Auth split: stacks on mobile (brand strip on top, form below); side-by-side md+ */
+/* Danger button */
+.trac-btn-danger {
+    background-color: var(--trac-danger);
+    color: #fff;
+    transition: background-color .15s ease-in-out;
+}
+.trac-btn-danger:hover { opacity: 0.9; }
+
+/* ============================================================
+   Task Card
+   ============================================================ */
+.trac-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid oklch(92% 0 0);
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+    cursor: grab;
+}
+.trac-card:hover {
+    box-shadow: 0 2px 8px oklch(0% 0 0 / 0.08);
+    border-color: oklch(85% 0 0);
+}
+.trac-card.is-dragging {
+    box-shadow: 0 8px 24px oklch(0% 0 0 / 0.15);
+    transform: scale(1.02);
+    border-color: var(--trac-primary);
+}
+
+/* ============================================================
+   Column Header
+   ============================================================ */
+.trac-column-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: oklch(50% 0 0);
+}
+.trac-column-header .count {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: oklch(60% 0 0);
+}
+
+/* ============================================================
+   Avatar
+   ============================================================ */
+.trac-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: #fff;
+    flex-shrink: 0;
+}
+.trac-avatar-sm { width: 1.5rem; height: 1.5rem; }
+.trac-avatar-md { width: 2rem; height: 2rem; font-size: 0.7rem; }
+
+/* ============================================================
+   Label Badge — auto-colored via data-label attribute
+   ============================================================ */
+.trac-label {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+}
+
+/* Priority flag colors */
+.trac-priority-urgent { color: var(--trac-danger); }
+.trac-priority-high { color: var(--trac-orange); }
+.trac-priority-medium { color: oklch(60% 0 0); }
+.trac-priority-low { color: oklch(70% 0 0); }
+
+/* ============================================================
+   Scrollbar styling for columns
+   ============================================================ */
+.trac-scroll::-webkit-scrollbar { width: 4px; }
+.trac-scroll::-webkit-scrollbar-track { background: transparent; }
+.trac-scroll::-webkit-scrollbar-thumb {
+    background: oklch(80% 0 0);
+    border-radius: 2px;
+}
+.trac-scroll::-webkit-scrollbar-thumb:hover { background: oklch(65% 0 0); }
+
+/* ============================================================
+   Auth split (unchanged)
+   ============================================================ */
 .auth-split { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 .auth-split-brand { display: none; }
 @media (min-width: 768px) {
@@ -52,7 +158,7 @@
     .auth-split-strip { display: none !important; }
 }
 
-/* Brand-tinted focus for Breeze inputs (replaces the default indigo) */
+/* Brand-tinted focus for Breeze inputs */
 .trac-input:focus {
     border-color: var(--trac-primary) !important;
     box-shadow: 0 0 0 1px var(--trac-primary) !important;

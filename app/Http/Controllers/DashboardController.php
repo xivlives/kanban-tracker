@@ -17,6 +17,7 @@ class DashboardController extends Controller
             'tasks',
             'tasks as pending_tasks_count' => fn($query) => $query->where('status', 'pending'),
             'tasks as in_progress_tasks_count' => fn($query) => $query->where('status', 'in-progress'),
+            'tasks as in_review_tasks_count' => fn($query) => $query->where('status', 'in-review'),
             'tasks as done_tasks_count' => fn($query) => $query->where('status', 'done'),
         ])->get();
 

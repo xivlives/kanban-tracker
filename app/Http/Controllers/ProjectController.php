@@ -13,7 +13,6 @@ class ProjectController extends Controller
 {
     public function index(Request $request): Response
     {
-        // Only the authenticated user's projects (also enforced by the model's global scope).
         $projects = $request->user()->projects()->withCount('tasks')->get();
 
         return Inertia::render('Projects/Index', [
@@ -23,26 +22,34 @@ class ProjectController extends Controller
 
     public function show(Project $project): Response
     {
-        // The 'owner' global scope already 404s another user's project on route binding;
-        // this is an explicit defence-in-depth guard.
         abort_unless($project->user_id === auth()->id(), 403);
 
         $tasks = $project->tasks()
             ->with('assignedUser')
-            ->orderBy('created_at', 'desc')
+            ->orderBy('sort_order', 'asc')
             ->get()
             ->groupBy('status');
 
-        $users = User::select('id', 'name')->get();
+        $users = User::select('id', 'name', 'email')->get();
+
+        // Collect all distinct labels used in this project for the filter dropdown
+        $labels = $project->tasks()
+            ->whereNotNull('label')
+            ->distinct()
+            ->pluck('label')
+            ->sort()
+            ->values();
 
         return Inertia::render('Projects/Show', [
             'project' => $project,
             'tasks' => [
-                'pending' => $tasks->get('pending', collect())->values(),
+                'pending'     => $tasks->get('pending', collect())->values(),
                 'in-progress' => $tasks->get('in-progress', collect())->values(),
-                'done' => $tasks->get('done', collect())->values(),
+                'in-review'   => $tasks->get('in-review', collect())->values(),
+                'done'        => $tasks->get('done', collect())->values(),
             ],
             'users' => $users,
+            'labels' => $labels,
         ]);
     }
 
@@ -53,7 +60,6 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        // Always own the project to the authenticated user.
         $project = $request->user()->projects()->create($validated);
 
         return redirect()->route('projects.show', $project)

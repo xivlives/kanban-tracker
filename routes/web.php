@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\BacklogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IntegrationController;
+use App\Http\Controllers\IssueController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ReportController;
@@ -38,10 +40,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
     Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
     Route::delete('tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+    Route::post('tasks/reorder', [TaskController::class, 'reorder'])->name('tasks.reorder');
     
     // Reports
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::post('reports/generate', [ReportController::class, 'generate'])->name('reports.generate');
+
+    // Backlog — all pending tasks across projects
+    Route::get('backlog', [BacklogController::class, 'index'])->name('backlog.index');
+
+    // Issues — flat list of all tasks with filters
+    Route::get('issues', [IssueController::class, 'index'])->name('issues.index');
 
     // Meenits integration — mint/revoke API tokens for the action-item push
     Route::get('integration', [IntegrationController::class, 'index'])->name('integration.index');
