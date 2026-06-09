@@ -9,6 +9,8 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\TeamInvitationController;
+use App\Http\Controllers\TeamMemberController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -35,6 +37,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Teams
     Route::post('teams/{team}/switch', [TeamController::class, 'switch'])->name('teams.switch');
+
+    // Team members (settings)
+    Route::get('team/members', [TeamMemberController::class, 'index'])->name('team.members.index');
+    Route::patch('team/members/{user}/role', [TeamMemberController::class, 'updateRole'])->name('team.members.updateRole');
+    Route::delete('team/members/{user}', [TeamMemberController::class, 'destroy'])->name('team.members.destroy');
+
+    // Team invitations (management)
+    Route::post('team/invitations', [TeamInvitationController::class, 'store'])->name('team.invitations.store');
+    Route::delete('team/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])->name('team.invitations.destroy');
 
     // Projects
     Route::resource('projects', ProjectController::class);
@@ -68,5 +79,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('integration/tokens', [IntegrationController::class, 'storeToken'])->name('integration.tokens.store');
     Route::delete('integration/tokens/{id}', [IntegrationController::class, 'destroyToken'])->name('integration.tokens.destroy');
 });
+
+// Invitation accept flow — accessible without auth (email links).
+Route::get('invitations/{token}', [TeamInvitationController::class, 'show'])->name('team.invitations.show');
+Route::post('invitations/{token}/accept', [TeamInvitationController::class, 'accept'])
+    ->middleware('auth')
+    ->name('team.invitations.accept');
 
 require __DIR__.'/auth.php';

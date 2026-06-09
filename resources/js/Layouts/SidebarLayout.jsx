@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import {
     Menu, LayoutDashboard, FolderKanban, BarChart3, Settings2,
-    LogOut, User, ListTodo, AlertCircle, Inbox, ChevronDown, Plus, Check, Building2,
+    LogOut, User, ListTodo, AlertCircle, Inbox, ChevronDown, Plus, Check, Building2, Users2,
 } from 'lucide-react';
 import TracLogo from '@/Components/TracLogo';
 import Dropdown from '@/Components/Dropdown';
@@ -28,6 +28,7 @@ export default function SidebarLayout({ header, children }) {
     ];
 
     const settingsNav = [
+        { name: 'Members', href: route('team.members.index'), icon: Users2, active: route().current('team.members.*') },
         { name: 'Integration', href: route('integration.index'), icon: Settings2, active: route().current('integration.*') },
         { name: 'Profile', href: route('profile.edit'), icon: User, active: route().current('profile.*') },
     ];

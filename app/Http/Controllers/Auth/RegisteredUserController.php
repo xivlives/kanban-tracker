@@ -18,9 +18,11 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('Auth/Register');
+        return Inertia::render('Auth/Register', [
+            'invitation' => $request->query('invitation'),
+        ]);
     }
 
     /**
@@ -34,6 +36,7 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'invitation' => ['nullable', 'string', 'max:64'],
         ]);
 
         $user = User::create([
@@ -49,6 +52,22 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
 
         Auth::login($user);
+
+        // If the user registered via an invitation link, auto-join the team.
+        if ($request->filled('invitation')) {
+            $invitation = \App\Models\TeamInvitation::where('token', $request->invitation)->first();
+            if ($invitation && $invitation->isPending() && strtolower($invitation->email) === strtolower($user->email)) {
+                $invitation->team->users()->attach($user->id, [
+                    'role' => $invitation->role,
+                    'joined_at' => now(),
+                ]);
+                $invitation->update(['accepted_at' => now()]);
+                session(['current_team_id' => $invitation->team_id]);
+
+                return redirect(route('dashboard', absolute: false))
+                    ->with('success', "Welcome to {$invitation->team->name}!");
+            }
+        }
 
         return redirect(route('dashboard', absolute: false));
     }

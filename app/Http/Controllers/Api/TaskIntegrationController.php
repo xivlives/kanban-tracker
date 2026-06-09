@@ -40,10 +40,12 @@ class TaskIntegrationController extends Controller
             'tasks' => ['required', 'array', 'min:1', 'max:100'],
             'tasks.*.title' => ['required', 'string', 'max:255'],
             'tasks.*.description' => ['nullable', 'string'],
-            'tasks.*.status' => ['nullable', 'in:pending,in-progress,done'],
+            'tasks.*.status' => ['nullable', 'in:pending,in-progress,in-review,done'],
             'tasks.*.due_date' => ['nullable', 'date'],
             'tasks.*.external_id' => ['nullable', 'string', 'max:191'],
             'tasks.*.source_ref' => ['nullable', 'array'],
+            'tasks.*.assignee_email' => ['nullable', 'email', 'max:255'],
+            'tasks.*.assignee_name' => ['nullable', 'string', 'max:255'],
             // Optional project name override; defaults to the Meenits inbox project.
             'project' => ['nullable', 'string', 'max:255'],
         ]);
@@ -59,15 +61,34 @@ class TaskIntegrationController extends Controller
             ['user_id' => $tokenUser->id, 'description' => 'Action items synced from your Meenits meetings.'],
         );
 
+        // Pre-load team members (keyed by email) for assignee resolution.
+        $teamMembers = $team->users()->get()->keyBy(fn ($u) => strtolower($u->email));
+
         $results = [];
         foreach ($data['tasks'] as $t) {
+            // Resolve assignee: only assign if the email belongs to a team member.
+            $assignedTo = null;
+            $sourceRef = $t['source_ref'] ?? [];
+
+            if (! empty($t['assignee_email'])) {
+                $member = $teamMembers->get(strtolower($t['assignee_email']));
+                if ($member) {
+                    $assignedTo = $member->id;
+                } else {
+                    // Not a team member — stash their info in source_ref for visibility.
+                    $sourceRef['assignee_email'] = $t['assignee_email'];
+                    $sourceRef['assignee_name'] = $t['assignee_name'] ?? null;
+                }
+            }
+
             $attrs = [
                 'title' => $t['title'],
                 'description' => $t['description'] ?? null,
                 'status' => $t['status'] ?? 'pending',
                 'due_date' => $t['due_date'] ?? null,
+                'assigned_to' => $assignedTo,
                 'source_app' => 'meenits',
-                'source_ref' => $t['source_ref'] ?? null,
+                'source_ref' => $sourceRef ?: null,
                 'external_id' => $t['external_id'] ?? null,
             ];
 
