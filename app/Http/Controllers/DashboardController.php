@@ -11,19 +11,21 @@ class DashboardController extends Controller
 {
     public function index(): Response
     {
-        Log::info('Dashboard accessed');
-        
-        $projects = Project::withCount([
-            'tasks',
-            'tasks as pending_tasks_count' => fn($query) => $query->where('status', 'pending'),
-            'tasks as in_progress_tasks_count' => fn($query) => $query->where('status', 'in-progress'),
-            'tasks as in_review_tasks_count' => fn($query) => $query->where('status', 'in-review'),
-            'tasks as done_tasks_count' => fn($query) => $query->where('status', 'done'),
-        ])->get();
+        $team = auth()->user()->currentTeam();
+        $projectIds = $team ? $team->projects()->pluck('id') : collect();
 
-        Log::info('Projects loaded', ['count' => $projects->count()]);
+        $projects = Project::whereIn('id', $projectIds)
+            ->withCount([
+                'tasks',
+                'tasks as pending_tasks_count' => fn($query) => $query->where('status', 'pending'),
+                'tasks as in_progress_tasks_count' => fn($query) => $query->where('status', 'in-progress'),
+                'tasks as in_review_tasks_count' => fn($query) => $query->where('status', 'in-review'),
+                'tasks as done_tasks_count' => fn($query) => $query->where('status', 'done'),
+            ])->get();
 
+        // My open tasks within the current team.
         $myTasks = \App\Models\Task::where('assigned_to', auth()->id())
+            ->whereIn('project_id', $projectIds)
             ->where('status', '!=', 'done')
             ->with('project')
             ->orderBy('created_at', 'desc')

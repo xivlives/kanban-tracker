@@ -29,11 +29,28 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $currentTeam = $user?->currentTeam();
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
+            // Active team + the user's teams, for the sidebar team switcher.
+            'currentTeam' => $currentTeam ? [
+                'id' => $currentTeam->id,
+                'name' => $currentTeam->name,
+                'personal' => $currentTeam->isPersonal(),
+                'role' => $currentTeam->memberRole($user),
+            ] : null,
+            'teams' => fn () => $user
+                ? $user->teams()->orderBy('name')->get(['teams.id', 'teams.name'])
+                : [],
+            // Current team's projects, for the sidebar "Boards" dropdown.
+            'sidebarProjects' => fn () => $currentTeam
+                ? $currentTeam->projects()->orderBy('name')->get(['id', 'name'])
+                : [],
         ];
     }
 }

@@ -43,6 +43,9 @@ class RegisteredUserController extends Controller
             'role' => 'member', // Default role
         ]);
 
+        // Every user starts in their own one-person workspace (team).
+        \App\Models\Team::createPersonalFor($user);
+
         event(new Registered($user));
 
         Auth::login($user);

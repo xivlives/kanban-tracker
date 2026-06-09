@@ -10,4 +10,10 @@ export default defineConfig({
         }),
         react(),
     ],
+    // Pin the dev-server host so HMR matches APP_URL (avoids the IPv6 [::1]
+    // mismatch that silently breaks hot-reload when you open the app at localhost).
+    server: {
+        host: 'localhost',
+        hmr: { host: 'localhost' },
+    },
 });

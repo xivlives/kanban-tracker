@@ -8,6 +8,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TeamController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -32,8 +33,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
+    // Teams
+    Route::post('teams/{team}/switch', [TeamController::class, 'switch'])->name('teams.switch');
+
     // Projects
     Route::resource('projects', ProjectController::class);
+    // Project-scoped views (Jira-style tabs): Summary · Timeline · Board · Calendar · List · Goals
+    Route::get('projects/{project}/summary', [ProjectController::class, 'summary'])->name('projects.summary');
+    Route::get('projects/{project}/timeline', [ProjectController::class, 'timeline'])->name('projects.timeline');
+    Route::get('projects/{project}/backlog', [ProjectController::class, 'backlog'])->name('projects.backlog');
+    Route::get('projects/{project}/calendar', [ProjectController::class, 'calendar'])->name('projects.calendar');
+    Route::get('projects/{project}/list', [ProjectController::class, 'list'])->name('projects.list');
+    Route::get('projects/{project}/goals', [ProjectController::class, 'goals'])->name('projects.goals');
     
     // Tasks
     Route::post('tasks', [TaskController::class, 'store'])->name('tasks.store');

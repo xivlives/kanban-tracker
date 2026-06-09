@@ -48,14 +48,15 @@ class TaskIntegrationController extends Controller
             'project' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $userId = $request->user()->id;
+        $tokenUser = $request->user();
+        // Pushed action items land in the token user's current team (their personal
+        // workspace by default). The Project 'team' global scope keys off the web
+        // guard, which is absent on a token request, so we bypass it explicitly.
+        $team = $tokenUser->currentTeam();
 
-        // Find-or-create the target project for this user. The Project owner global
-        // scope keys off Auth::id() (the web guard), which is absent on a token
-        // request — so we bypass it and scope by the token user explicitly.
-        $project = Project::withoutGlobalScope('owner')->firstOrCreate(
-            ['user_id' => $userId, 'name' => $data['project'] ?? self::DEFAULT_PROJECT],
-            ['description' => 'Action items synced from your Meenits meetings.'],
+        $project = Project::withoutGlobalScope('team')->firstOrCreate(
+            ['team_id' => $team->id, 'name' => $data['project'] ?? self::DEFAULT_PROJECT],
+            ['user_id' => $tokenUser->id, 'description' => 'Action items synced from your Meenits meetings.'],
         );
 
         $results = [];

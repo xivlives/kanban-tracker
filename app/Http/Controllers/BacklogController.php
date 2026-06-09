@@ -16,7 +16,8 @@ class BacklogController extends Controller
      */
     public function index(Request $request): Response
     {
-        $projectIds = $request->user()->projects()->pluck('id');
+        $team = $request->user()->currentTeam();
+        $projectIds = $team ? $team->projects()->pluck('id') : collect();
 
         $tasks = Task::whereIn('project_id', $projectIds)
             ->where('status', 'pending')
@@ -32,7 +33,7 @@ class BacklogController extends Controller
             ->sort()
             ->values();
 
-        $projects = $request->user()->projects()->select('id', 'name')->get();
+        $projects = $team ? $team->projects()->get(['id', 'name']) : collect();
 
         return Inertia::render('Backlog/Index', [
             'tasks' => $tasks,

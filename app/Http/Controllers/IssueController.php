@@ -16,7 +16,8 @@ class IssueController extends Controller
      */
     public function index(Request $request): Response
     {
-        $projectIds = $request->user()->projects()->pluck('id');
+        $team = $request->user()->currentTeam();
+        $projectIds = $team ? $team->projects()->pluck('id') : collect();
 
         $query = Task::whereIn('project_id', $projectIds)
             ->with(['project:id,name', 'assignedUser:id,name']);
@@ -55,14 +56,10 @@ class IssueController extends Controller
             ->sort()
             ->values();
 
-        $projects = $request->user()->projects()->select('id', 'name')->get();
+        $projects = $team ? $team->projects()->get(['id', 'name']) : collect();
 
-        $users = \App\Models\User::select('id', 'name')
-            ->whereIn('id', Task::whereIn('project_id', $projectIds)
-                ->whereNotNull('assigned_to')
-                ->distinct()
-                ->pluck('assigned_to'))
-            ->get();
+        // Assignee filter options = the current team's members.
+        $users = $team ? $team->users()->get(['users.id', 'users.name']) : collect();
 
         return Inertia::render('Issues/Index', [
             'tasks'    => $tasks,

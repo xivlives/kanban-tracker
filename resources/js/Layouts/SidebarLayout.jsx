@@ -1,20 +1,27 @@
 import React, { useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import {
     Menu, LayoutDashboard, FolderKanban, BarChart3, Settings2,
-    LogOut, User, ListTodo, AlertCircle, Inbox,
+    LogOut, User, ListTodo, AlertCircle, Inbox, ChevronDown, Plus, Check, Building2,
 } from 'lucide-react';
 import TracLogo from '@/Components/TracLogo';
 import Dropdown from '@/Components/Dropdown';
+import CreateProjectModal from '@/Components/CreateProjectModal';
 
 export default function SidebarLayout({ header, children }) {
-    const { auth } = usePage().props;
+    const page = usePage().props;
+    const { auth } = page;
     const user = auth.user;
+    const projects = page.sidebarProjects ?? [];
+    const currentTeam = page.currentTeam ?? null;
+    const teams = page.teams ?? [];
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [showCreateProject, setShowCreateProject] = useState(false);
+    const [boardsOpen, setBoardsOpen] = useState(route().current('projects.*'));
 
+    // Dashboard sits above the Boards dropdown; the rest below it.
+    const dashboardItem = { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') };
     const planningNav = [
-        { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') },
-        { name: 'Board', href: route('projects.index'), icon: FolderKanban, active: route().current('projects.*') },
         { name: 'Backlog', href: route('backlog.index'), icon: Inbox, active: route().current('backlog.*') },
         { name: 'Issues', href: route('issues.index'), icon: AlertCircle, active: route().current('issues.*') },
         { name: 'Reports', href: route('reports.index'), icon: BarChart3, active: route().current('reports.*') },
@@ -40,16 +47,14 @@ export default function SidebarLayout({ header, children }) {
                             key={item.name}
                             href={item.href}
                             onClick={() => setMobileMenuOpen(false)}
-                            className={`group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                                item.active
-                                    ? 'bg-white/15 text-white'
-                                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                            }`}
+                            className={`group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${item.active
+                                ? 'bg-white/15 text-white'
+                                : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                }`}
                         >
                             <Icon
-                                className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${
-                                    item.active ? 'text-[var(--trac-accent)]' : 'text-white/50 group-hover:text-white/70'
-                                }`}
+                                className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${item.active ? 'text-[var(--trac-accent)]' : 'text-white/50 group-hover:text-white/70'
+                                    }`}
                                 strokeWidth={item.active ? 2.2 : 1.8}
                             />
                             {item.name}
@@ -59,6 +64,73 @@ export default function SidebarLayout({ header, children }) {
             </nav>
         </div>
     );
+
+    const itemClass = (active) =>
+        `group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
+            ? 'bg-white/15 text-white'
+            : 'text-white/70 hover:bg-white/10 hover:text-white'}`;
+
+    const NavItem = ({ item }) => {
+        const Icon = item.icon;
+        return (
+            <Link href={item.href} onClick={() => setMobileMenuOpen(false)} className={itemClass(item.active)}>
+                <Icon
+                    className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${item.active ? 'text-[var(--trac-accent)]' : 'text-white/50 group-hover:text-white/70'}`}
+                    strokeWidth={item.active ? 2.2 : 1.8}
+                />
+                {item.name}
+            </Link>
+        );
+    };
+
+    const openCreate = () => { setShowCreateProject(true); setMobileMenuOpen(false); };
+
+    const BoardsDropdown = () => {
+        const active = route().current('projects.*');
+        const currentId = route().params?.project;
+        return (
+            <div>
+                <button type="button" onClick={() => setBoardsOpen((o) => !o)} className={`w-full ${itemClass(active)}`}>
+                    <FolderKanban
+                        className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${active ? 'text-[var(--trac-accent)]' : 'text-white/50 group-hover:text-white/70'}`}
+                        strokeWidth={active ? 2.2 : 1.8}
+                    />
+                    <span className="flex-1 text-left">Boards</span>
+                    <ChevronDown size={15} className={`text-white/50 transition-transform ${boardsOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {boardsOpen && (
+                    <div className="mt-0.5 space-y-0.5 pl-7">
+                        {projects.length === 0 ? (
+                            <button type="button" onClick={openCreate} className="flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white">
+                                <Plus size={14} /> Create project
+                            </button>
+                        ) : (
+                            <>
+                                {projects.map((p) => {
+                                    const isCurrent = active && String(currentId) === String(p.id);
+                                    return (
+                                        <Link
+                                            key={p.id}
+                                            href={route('projects.show', p.id)}
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className={`block truncate rounded-lg px-3 py-1.5 text-sm transition-colors ${isCurrent ? 'bg-white/10 font-medium text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+                                            title={p.name}
+                                        >
+                                            {p.name}
+                                        </Link>
+                                    );
+                                })}
+                                <button type="button" onClick={openCreate} className="flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white/45 transition-colors hover:text-white">
+                                    <Plus size={13} /> New project
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     const SidebarContent = () => (
         <div className="flex h-full flex-col">
@@ -70,9 +142,49 @@ export default function SidebarLayout({ header, children }) {
                 </Link>
             </div>
 
+            {/* Team switcher */}
+            <div className="px-4 pb-3">
+                <Dropdown>
+                    <Dropdown.Trigger>
+                        <button className="flex w-full items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-left transition-colors hover:bg-white/15">
+                            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold" style={{ background: 'var(--trac-accent)', color: 'var(--trac-ink)' }}>
+                                {currentTeam?.name?.charAt(0)?.toUpperCase() ?? 'T'}
+                            </span>
+                            <span className="flex-1 truncate text-sm font-semibold text-white">{currentTeam?.name ?? 'No team'}</span>
+                            <ChevronDown size={14} className="flex-shrink-0 text-white/50" />
+                        </button>
+                    </Dropdown.Trigger>
+                    <Dropdown.Content width="60">
+                        <div className="px-3 pb-1 pt-2 text-[0.6rem] font-bold uppercase tracking-wider text-gray-400">Your teams</div>
+                        {teams.map((t) => (
+                            <button
+                                key={t.id}
+                                onClick={() => router.post(route('teams.switch', t.id))}
+                                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                            >
+                                <span className="flex items-center gap-2 truncate">
+                                    <Building2 size={14} className="flex-shrink-0 text-gray-400" />
+                                    <span className="truncate">{t.name}</span>
+                                </span>
+                                {currentTeam?.id === t.id && <Check size={15} style={{ color: 'var(--trac-primary)' }} />}
+                            </button>
+                        ))}
+                    </Dropdown.Content>
+                </Dropdown>
+            </div>
+
             {/* Navigation sections */}
             <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
-                <NavSection title="Planning" items={planningNav} />
+                <div className="mb-4">
+                    <div className="px-3 mb-2">
+                        <span className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/40">Planning</span>
+                    </div>
+                    <nav className="space-y-0.5">
+                        <NavItem item={dashboardItem} />
+                        <BoardsDropdown />
+                        {planningNav.map((item) => <NavItem key={item.name} item={item} />)}
+                    </nav>
+                </div>
                 <div className="my-3 border-t border-white/10" />
                 <NavSection title="Settings" items={settingsNav} />
             </div>
@@ -116,9 +228,8 @@ export default function SidebarLayout({ header, children }) {
             )}
 
             {/* Mobile Sidebar */}
-            <div className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-[var(--trac-primary-950)] trac-brand-gradient transition-transform duration-300 ease-in-out lg:hidden ${
-                mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}>
+            <div className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-[var(--trac-primary-950)] trac-brand-gradient transition-transform duration-300 ease-in-out lg:hidden ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}>
                 <SidebarContent />
             </div>
 
@@ -162,6 +273,8 @@ export default function SidebarLayout({ header, children }) {
                     </div>
                 </main>
             </div>
+
+            <CreateProjectModal show={showCreateProject} onClose={() => setShowCreateProject(false)} />
         </div>
     );
 }

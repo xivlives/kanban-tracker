@@ -13,19 +13,23 @@ class Project extends Model
 
     protected $fillable = [
         'user_id',
+        'team_id',
         'name',
         'description',
     ];
 
     /**
-     * Global scope: a user can only ever query their own projects.
-     * Applied whenever a user is authenticated (i.e. all web requests).
+     * Global scope (security chokepoint): a user can only ever query projects
+     * belonging to a team they're a member of. Applied on every authenticated
+     * web request — so route-model binding, relations and ad-hoc queries are
+     * all team-bounded automatically. Skipped when no web user is authenticated
+     * (e.g. the token API / queue jobs), which scope by team explicitly instead.
      */
     protected static function booted(): void
     {
-        static::addGlobalScope('owner', function (Builder $query) {
+        static::addGlobalScope('team', function (Builder $query) {
             if (Auth::check()) {
-                $query->where($query->getModel()->getTable() . '.user_id', Auth::id());
+                $query->whereIn($query->getModel()->getTable() . '.team_id', Auth::user()->teamIds());
             }
         });
     }
@@ -33,6 +37,11 @@ class Project extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function team()
+    {
+        return $this->belongsTo(Team::class);
     }
 
     public function tasks()

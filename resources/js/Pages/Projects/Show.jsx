@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import SidebarLayout from '@/Layouts/SidebarLayout';
+import ProjectLayout from '@/Layouts/ProjectLayout';
 import TaskDetailModal from '@/Components/TaskDetailModal';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Head } from '@inertiajs/react';
@@ -145,25 +145,18 @@ export default function Show({ project, tasks, users, labels = [] }) {
     }, [tasks]);
 
     return (
-        <SidebarLayout
-            header={
-                <div className="flex items-center justify-between">
-                    <div>
-                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-0.5">
-                            <span>Projects</span>
-                            <span>/</span>
-                            <span className="font-medium text-gray-700">{project.name}</span>
-                        </div>
-                        <h1 className="text-xl font-bold text-gray-900">Board</h1>
-                    </div>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="trac-btn-primary rounded-lg px-4 py-2 text-sm font-semibold flex items-center gap-1.5"
-                    >
-                        <Plus size={16} strokeWidth={2.5} />
-                        Create
-                    </button>
-                </div>
+        <ProjectLayout
+            project={project}
+            tab="board"
+            title="Board"
+            actions={
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="trac-btn-primary rounded-lg px-4 py-2 text-sm font-semibold flex items-center gap-1.5"
+                >
+                    <Plus size={16} strokeWidth={2.5} />
+                    Create
+                </button>
             }
         >
             <Head title={`${project.name} — Board`} />
@@ -422,6 +415,6 @@ export default function Show({ project, tasks, users, labels = [] }) {
                     </div>
                 </div>
             )}
-        </SidebarLayout>
+        </ProjectLayout>
     );
 }

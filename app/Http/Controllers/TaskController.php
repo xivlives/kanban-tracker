@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Project;
 use App\Models\Task;
 use App\Services\TaskService;
 use Illuminate\Http\RedirectResponse;
@@ -27,7 +28,10 @@ class TaskController extends Controller
             'due_date'    => 'nullable|date',
         ]);
 
-        $request->user()->projects()->findOrFail($validated['project_id']);
+        // Team-scoped: findOrFail honours the Project global scope (404 if not in
+        // one of the user's teams). Assignee must belong to that project's team.
+        $project = Project::findOrFail($validated['project_id']);
+        $this->assertAssigneeInTeam($project, $validated['assigned_to'] ?? null);
 
         $this->taskService->createTask($validated);
 
@@ -47,6 +51,8 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'due_date'    => 'nullable|date',
         ]);
+
+        $this->assertAssigneeInTeam($task->project, $validated['assigned_to'] ?? null);
 
         $this->taskService->updateTask($task, $validated);
 
@@ -81,8 +87,8 @@ class TaskController extends Controller
         foreach ($validated['tasks'] as $item) {
             $task = Task::find($item['id']);
             if ($task) {
-                // Verify ownership through project
-                $ownsProject = $request->user()->projects()->whereKey($task->project_id)->exists();
+                // Verify access through the project's team (global scope applies)
+                $ownsProject = Project::whereKey($task->project_id)->exists();
                 if ($ownsProject) {
                     $task->update(['sort_order' => $item['sort_order']]);
                 }
@@ -103,9 +109,19 @@ class TaskController extends Controller
 
     protected function authorizeTaskOwnership(Request $request, Task $task): void
     {
-        abort_unless(
-            $request->user()->projects()->whereKey($task->project_id)->exists(),
-            403
-        );
+        // Project global scope means this only matches projects in the user's teams.
+        abort_unless(Project::whereKey($task->project_id)->exists(), 403);
+    }
+
+    /** A task's assignee, if set, must be a member of the project's team. */
+    protected function assertAssigneeInTeam(Project $project, $assigneeId): void
+    {
+        if (! empty($assigneeId)) {
+            abort_unless(
+                $project->team->users()->whereKey($assigneeId)->exists(),
+                422,
+                'Assignee must be a member of this project\'s team.'
+            );
+        }
     }
 }
