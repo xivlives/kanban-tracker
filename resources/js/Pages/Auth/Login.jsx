@@ -1,6 +1,7 @@
 import Checkbox from '@/Components/Checkbox';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import MeenitsSsoButton from '@/Components/MeenitsSsoButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -30,6 +31,16 @@ export default function Login({ status, canResetPassword }) {
                     {status}
                 </div>
             )}
+
+            <MeenitsSsoButton label="Log in with Meenits" />
+
+            <div className="my-6 flex items-center gap-3">
+                <span className="h-px flex-1 bg-gray-200" />
+                <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                    or continue with email
+                </span>
+                <span className="h-px flex-1 bg-gray-200" />
+            </div>
 
             <form onSubmit={submit}>
                 <div>

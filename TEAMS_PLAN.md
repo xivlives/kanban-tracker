@@ -29,9 +29,9 @@ team_invitations (email + token) → register/login → auto-join
 - [x] Project create sets `team_id`; assignee pickers + validation scoped to team members.
 - **Verified:** cross-team isolation (no leak), sharing (multi-team member sees both), default = own team, switching works.
 
-### Stage 3 — Members & invitations (email links)
-- [ ] Team settings page: members + roles, remove, change role.
-- [ ] Invite by email → `team_invitations` + mail + accept (register/login → join).
+### Stage 3 — Members & invitations (email links) ✅ (2026-06-09, implemented & tested)
+- [x] Team settings page: members + roles, remove, change role.
+- [x] Invite by email → `team_invitations` + mail + accept (register/login → join).
 
 ### Stage 4 — Meenits integration mapping (later)
 - [ ] Map a connected Meenits org → a Trac team so action items feed a shared team board.

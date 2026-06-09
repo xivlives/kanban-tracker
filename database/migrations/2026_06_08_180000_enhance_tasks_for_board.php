@@ -8,8 +8,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        // 1. Expand the status enum to include 'in-review'
-        DB::statement("ALTER TABLE tasks MODIFY COLUMN status ENUM('pending','in-progress','in-review','done') NOT NULL DEFAULT 'pending'");
+        // 1. Expand the status enum to include 'in-review'.
+        //    Raw ENUM redefinition is MySQL-only; on sqlite (test DB) the column
+        //    is plain text, so no change is needed there.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE tasks MODIFY COLUMN status ENUM('pending','in-progress','in-review','done') NOT NULL DEFAULT 'pending'");
+        }
 
         // 2. Add new columns
         Schema::table('tasks', function (Blueprint $table) {
@@ -29,6 +33,8 @@ return new class extends Migration {
             $table->dropColumn(['label', 'task_key', 'priority', 'sort_order']);
         });
 
-        DB::statement("ALTER TABLE tasks MODIFY COLUMN status ENUM('pending','in-progress','done') NOT NULL DEFAULT 'pending'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE tasks MODIFY COLUMN status ENUM('pending','in-progress','done') NOT NULL DEFAULT 'pending'");
+        }
     }
 };

@@ -35,4 +35,24 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | "Login with Meenits" — OAuth2 client (SSO)
+    |--------------------------------------------------------------------------
+    |
+    | MeenitsApp (Laravel Passport) is the identity provider; MeenitsTrac is the
+    | client. client_id/secret/redirect come from the first-party trusted client
+    | registered in MeenitsApp. URLs default to prod but are env-overridable for
+    | local/staging. Consumed by App\Socialite\MeenitsProvider. See SSO_PLAN.md.
+    |
+    */
+    'meenits' => [
+        'client_id' => env('MEENITS_CLIENT_ID'),
+        'client_secret' => env('MEENITS_CLIENT_SECRET'),
+        'redirect' => env('MEENITS_REDIRECT_URI', 'https://trac.meenits.app/auth/meenits/callback'),
+        'authorize_url' => env('MEENITS_AUTHORIZE_URL', 'https://app.meenits.app/oauth/authorize'),
+        'token_url' => env('MEENITS_TOKEN_URL', 'https://app.meenits.app/oauth/token'),
+        'userinfo_url' => env('MEENITS_USERINFO_URL', 'https://app.meenits.app/api/user'),
+    ],
+
 ];

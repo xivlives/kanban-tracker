@@ -7,11 +7,18 @@ use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\MeenitsSsoController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    // "Login with Meenits" — OAuth2 SSO against MeenitsApp (SSO_PLAN.md Stage B).
+    Route::get('auth/meenits/redirect', [MeenitsSsoController::class, 'redirect'])
+        ->name('auth.meenits.redirect');
+    Route::get('auth/meenits/callback', [MeenitsSsoController::class, 'callback'])
+        ->name('auth.meenits.callback');
+
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
