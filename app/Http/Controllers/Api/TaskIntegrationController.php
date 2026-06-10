@@ -58,6 +58,9 @@ class TaskIntegrationController extends Controller
             'workspace.meenits_org_uuid' => ['nullable', 'string', 'max:191'],
             'workspace.type' => ['nullable', 'in:personal,team'],
             'workspace.name' => ['nullable', 'string', 'max:255'],
+            // The Meenits org owner's identity — lets a platform/service caller own & route
+            // the team without being the human connector (Stage F, Part 2).
+            'workspace.owner_meenits_user_id' => ['nullable', 'integer'],
         ]);
 
         $tokenUser = $request->user();
@@ -130,17 +133,26 @@ class TaskIntegrationController extends Controller
      * - personal workspace, or a legacy push with no descriptor → the token user's
      *   personal team.
      */
-    private function resolveTargetTeam(User $tokenUser, ?array $workspace): Team
+    private function resolveTargetTeam(User $caller, ?array $workspace): Team
     {
+        // The Meenits org owner, resolved by identity — so a platform/service caller routes
+        // and owns teams correctly. Falls back to the authenticated caller (legacy per-org
+        // token owner) when no identity is supplied or the owner has no Trac account yet.
+        $ownerId = $workspace['owner_meenits_user_id'] ?? null;
+        $owner = $ownerId ? User::where('meenits_user_id', $ownerId)->first() : null;
+
         if (($workspace['type'] ?? null) === 'team' && ! empty($workspace['meenits_org_uuid'])) {
             return Team::findOrCreateForMeenitsOrg(
                 $workspace['meenits_org_uuid'],
                 $workspace['name'] ?? 'Meenits Workspace',
-                $tokenUser,
+                $owner ?? $caller,
             );
         }
 
-        return $tokenUser->currentTeam() ?? Team::createPersonalFor($tokenUser);
+        // Personal workspace → the owner's personal team (resolved by identity), else the caller's.
+        $target = $owner ?? $caller;
+
+        return $target->currentTeam() ?? Team::createPersonalFor($target);
     }
 
     /**
