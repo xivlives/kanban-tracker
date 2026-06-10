@@ -53,6 +53,8 @@ return [
         'authorize_url' => env('MEENITS_AUTHORIZE_URL', 'https://app.meenits.app/oauth/authorize'),
         'token_url' => env('MEENITS_TOKEN_URL', 'https://app.meenits.app/oauth/token'),
         'userinfo_url' => env('MEENITS_USERINFO_URL', 'https://app.meenits.app/api/user'),
+        // The user's Meenits orgs (workspaces) — used to offer "join this org's workspace".
+        'organizations_url' => env('MEENITS_ORGS_URL', 'https://app.meenits.app/api/user/organizations'),
     ],
 
 ];

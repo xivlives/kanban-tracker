@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 use Throwable;
@@ -92,6 +93,34 @@ class MeenitsSsoController extends Controller
 
         Auth::login($user, remember: true);
 
+        // Pull the user's Meenits orgs so we can offer to join their workspaces (Stage F).
+        $this->cacheMeenitsOrganizations($meenitsUser->token);
+
         return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    /**
+     * Fetch the user's Meenits organizations with their fresh OAuth token and stash them
+     * in the session. Powers the "join this org's workspace" prompts (the org is the
+     * canonical, suite-wide workspace). Best-effort — never blocks login. See SSO_PLAN.md F.
+     */
+    private function cacheMeenitsOrganizations(?string $token): void
+    {
+        if (! $token) {
+            return;
+        }
+
+        try {
+            $response = Http::timeout(10)
+                ->withToken($token)
+                ->acceptJson()
+                ->get((string) config('services.meenits.organizations_url'));
+
+            if ($response->successful()) {
+                session(['meenits_orgs' => $response->json()]);
+            }
+        } catch (Throwable $e) {
+            Log::info('Could not fetch Meenits organizations', ['error' => $e->getMessage()]);
+        }
     }
 }

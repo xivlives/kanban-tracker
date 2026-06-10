@@ -3,6 +3,7 @@ import SidebarLayout from "@/Layouts/SidebarLayout";
 import { Head } from "@inertiajs/react";
 import { useState } from "react";
 import { Plus, BarChart3, Zap, FolderKanban } from "lucide-react";
+import WorkspaceInvitesBanner from "@/Components/WorkspaceInvitesBanner";
 
 export default function Dashboard({ projects = [], myTasks = [] }) {
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -56,6 +57,8 @@ export default function Dashboard({ projects = [], myTasks = [] }) {
             }
         >
             <Head title="Dashboard" />
+
+            <WorkspaceInvitesBanner />
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

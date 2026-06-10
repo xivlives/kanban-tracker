@@ -59,7 +59,7 @@ class Team extends Model
      * Used by the action-item sync to route org meetings to a shared team workspace
      * (SSO Stage E).
      */
-    public static function findOrCreateForMeenitsOrg(string $meenitsOrgUuid, string $name, User $owner): self
+    public static function findOrCreateForMeenitsOrg(string $meenitsOrgUuid, string $name, User $owner, string $role = 'owner'): self
     {
         $team = static::where('meenits_org_uuid', $meenitsOrgUuid)->first();
 
@@ -75,9 +75,22 @@ class Team extends Model
             'settings' => ['source' => 'meenits'],
         ]);
 
-        $team->users()->attach($owner->id, ['role' => 'owner', 'joined_at' => now()]);
+        $team->users()->attach($owner->id, ['role' => $role, 'joined_at' => now()]);
 
         return $team;
+    }
+
+    /**
+     * Map a Meenits organization role to a Trac team role. Meenits has a `manager` tier
+     * that Trac doesn't, so it collapses to `member`.
+     */
+    public static function mapMeenitsRole(?string $meenitsRole): string
+    {
+        return match ($meenitsRole) {
+            'owner' => 'owner',
+            'admin' => 'admin',
+            default => 'member',
+        };
     }
 
     /** Create a one-person "personal" team for a user and make them owner. */

@@ -11,6 +11,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TeamInvitationController;
 use App\Http\Controllers\TeamMemberController;
+use App\Http\Controllers\WorkspaceController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -37,6 +38,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Teams
     Route::post('teams/{team}/switch', [TeamController::class, 'switch'])->name('teams.switch');
+
+    // Join a Meenits org's Trac workspace (Stage F — unified org workspaces).
+    Route::post('workspaces/{meenitsOrgUuid}/join', [WorkspaceController::class, 'join'])
+        ->name('workspaces.join');
 
     // Team members (settings)
     Route::get('team/members', [TeamMemberController::class, 'index'])->name('team.members.index');
