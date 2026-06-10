@@ -10,7 +10,7 @@ class Team extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'owner_id', 'settings'];
+    protected $fillable = ['name', 'slug', 'owner_id', 'settings', 'meenits_org_uuid'];
 
     protected $casts = ['settings' => 'array'];
 
@@ -49,6 +49,35 @@ class Team extends Model
     public function memberRole(User $user): ?string
     {
         return $this->users()->whereKey($user->id)->first()?->pivot->role;
+    }
+
+    /**
+     * Resolve (or auto-provision) the Trac team that mirrors a Meenits org/workspace.
+     *
+     * Idempotent on meenits_org_uuid. On first sync the team is created and the
+     * connector ($owner, the integration-token user) becomes its owner + member.
+     * Used by the action-item sync to route org meetings to a shared team workspace
+     * (SSO Stage E).
+     */
+    public static function findOrCreateForMeenitsOrg(string $meenitsOrgUuid, string $name, User $owner): self
+    {
+        $team = static::where('meenits_org_uuid', $meenitsOrgUuid)->first();
+
+        if ($team) {
+            return $team;
+        }
+
+        $team = static::create([
+            'name' => $name ?: 'Meenits Workspace',
+            'slug' => Str::slug($name ?: 'meenits-workspace') . '-' . Str::lower(Str::random(6)),
+            'owner_id' => $owner->id,
+            'meenits_org_uuid' => $meenitsOrgUuid,
+            'settings' => ['source' => 'meenits'],
+        ]);
+
+        $team->users()->attach($owner->id, ['role' => 'owner', 'joined_at' => now()]);
+
+        return $team;
     }
 
     /** Create a one-person "personal" team for a user and make them owner. */
