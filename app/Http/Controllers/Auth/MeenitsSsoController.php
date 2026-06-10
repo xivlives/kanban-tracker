@@ -38,7 +38,10 @@ class MeenitsSsoController extends Controller
         try {
             $meenitsUser = Socialite::driver('meenits')->user();
         } catch (Throwable $e) {
-            Log::warning('Meenits SSO callback failed', ['error' => $e->getMessage()]);
+            Log::warning('Meenits SSO callback failed', [
+                'type' => $e::class,
+                'error' => $e->getMessage(),
+            ]);
 
             return redirect()->route('login')
                 ->withErrors(['email' => 'Could not sign in with Meenits. Please try again.']);
