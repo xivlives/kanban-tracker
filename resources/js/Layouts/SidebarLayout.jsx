@@ -7,6 +7,7 @@ import {
 import TracLogo from '@/Components/TracLogo';
 import Dropdown from '@/Components/Dropdown';
 import CreateProjectModal from '@/Components/CreateProjectModal';
+import ToastManager from '@/Components/ToastManager';
 
 export default function SidebarLayout({ header, children }) {
     const page = usePage().props;
@@ -220,6 +221,7 @@ export default function SidebarLayout({ header, children }) {
 
     return (
         <div className="flex h-screen bg-gray-50 overflow-hidden">
+            <ToastManager />
             {/* Mobile menu backdrop */}
             {mobileMenuOpen && (
                 <div
