@@ -69,6 +69,17 @@ class TaskIntegrationController extends Controller
         // for personal workspaces or legacy pushes with no workspace descriptor.
         $team = $this->resolveTargetTeam($tokenUser, $data['workspace'] ?? null);
 
+        // Personal push for a user who hasn't joined Trac yet → skip gracefully (don't
+        // create their private tasks under the service account). They'll sync once they
+        // sign in. Not an error — report zero synced.
+        if (! $team) {
+            return response()->json([
+                'message' => 'The target user has not joined MeenitsTrac yet — nothing was synced.',
+                'tasks' => [],
+                'count' => 0,
+            ], 200);
+        }
+
         // The Project 'team' global scope keys off the web guard, which is absent on a
         // token request, so we bypass it explicitly.
         $project = Project::withoutGlobalScope('team')->firstOrCreate(
@@ -133,11 +144,11 @@ class TaskIntegrationController extends Controller
      * - personal workspace, or a legacy push with no descriptor → the token user's
      *   personal team.
      */
-    private function resolveTargetTeam(User $caller, ?array $workspace): Team
+    private function resolveTargetTeam(User $caller, ?array $workspace): ?Team
     {
         // The Meenits org owner, resolved by identity — so a platform/service caller routes
         // and owns teams correctly. Falls back to the authenticated caller (legacy per-org
-        // token owner) when no identity is supplied or the owner has no Trac account yet.
+        // token owner) for team provisioning when the owner has no Trac account yet.
         $ownerId = $workspace['owner_meenits_user_id'] ?? null;
         $owner = $ownerId ? User::where('meenits_user_id', $ownerId)->first() : null;
 
@@ -149,10 +160,14 @@ class TaskIntegrationController extends Controller
             );
         }
 
-        // Personal workspace → the owner's personal team (resolved by identity), else the caller's.
-        $target = $owner ?? $caller;
+        // Personal workspace. When an owner identity is given (platform/service push) but that
+        // user hasn't joined Trac, skip — don't dump their private tasks into the service/
+        // caller account. Legacy per-org token pushes (no identity) use the caller's own team.
+        if ($ownerId) {
+            return $owner ? ($owner->currentTeam() ?? Team::createPersonalFor($owner)) : null;
+        }
 
-        return $target->currentTeam() ?? Team::createPersonalFor($target);
+        return $caller->currentTeam() ?? Team::createPersonalFor($caller);
     }
 
     /**

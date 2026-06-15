@@ -109,4 +109,59 @@ class TracSyncMappingTest extends TestCase
         $this->assertNotNull($project);
         $this->assertDatabaseHas('tasks', ['title' => 'Legacy', 'project_id' => $project->id]);
     }
+
+    // ── Part 2: identity-routed push over the platform service credential ──
+
+    public function test_team_push_is_owned_by_the_org_owner_identity_not_the_caller(): void
+    {
+        $this->connector(); // the (service/system) caller
+        $owner = User::factory()->create(['meenits_user_id' => 7001]);
+
+        $this->postJson('/api/tasks/bulk', [
+            'workspace' => [
+                'type' => 'team', 'meenits_org_uuid' => 'org-id-7', 'name' => 'Acme',
+                'owner_meenits_user_id' => 7001,
+            ],
+            'tasks' => [['title' => 'X', 'external_id' => 'e7']],
+        ])->assertCreated();
+
+        $team = Team::where('meenits_org_uuid', 'org-id-7')->first();
+        $this->assertSame($owner->id, $team->owner_id, 'team is owned by the Meenits owner, not the service caller');
+    }
+
+    public function test_personal_push_routes_to_the_owner_personal_team_by_identity(): void
+    {
+        $this->connector();
+        $owner = User::factory()->create(['meenits_user_id' => 7002]);
+        $ownerTeam = Team::createPersonalFor($owner);
+
+        $this->postJson('/api/tasks/bulk', [
+            'workspace' => [
+                'type' => 'personal', 'meenits_org_uuid' => 'PER-7', 'name' => 'Mine',
+                'owner_meenits_user_id' => 7002,
+            ],
+            'tasks' => [['title' => 'P', 'external_id' => 'e8']],
+        ])->assertCreated();
+
+        $project = Project::withoutGlobalScope('team')->where('team_id', $ownerTeam->id)->first();
+        $this->assertNotNull($project);
+        $this->assertDatabaseHas('tasks', ['title' => 'P', 'project_id' => $project->id]);
+    }
+
+    public function test_personal_push_for_a_user_without_a_trac_account_is_skipped(): void
+    {
+        $this->connector();
+
+        $response = $this->postJson('/api/tasks/bulk', [
+            'workspace' => [
+                'type' => 'personal', 'meenits_org_uuid' => 'PER-9', 'name' => 'Ghost',
+                'owner_meenits_user_id' => 999999, // no Trac user with this identity
+            ],
+            'tasks' => [['title' => 'Should not land', 'external_id' => 'e9']],
+        ]);
+
+        $response->assertOk(); // graceful skip, not an error
+        $response->assertJson(['count' => 0]);
+        $this->assertDatabaseMissing('tasks', ['title' => 'Should not land']);
+    }
 }
