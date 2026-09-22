@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import {
     Menu, LayoutDashboard, FolderKanban, BarChart3, Settings2,
     LogOut, User, ListTodo, AlertCircle, Inbox, ChevronDown, Plus, Check, Building2, Users2,
+    ChevronsLeft, ChevronsRight,
 } from 'lucide-react';
 import TracLogo from '@/Components/TracLogo';
 import Dropdown from '@/Components/Dropdown';
@@ -20,6 +21,44 @@ export default function SidebarLayout({ header, children }) {
     const [showCreateProject, setShowCreateProject] = useState(false);
     const [boardsOpen, setBoardsOpen] = useState(route().current('projects.*'));
 
+    // Desktop sidebar collapse — mirrors MeenitsApp's BaseDashboardLayout
+    // behaviour: persisted choice + a transient hover "peek" that reveals
+    // labels without reflowing the page (main content margin stays pinned
+    // to the collapsed width while peeking).
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        try {
+            return window.localStorage.getItem('meenitstrac.sidebar') === 'collapsed';
+        } catch {
+            return false;
+        }
+    });
+    const [sidebarPeek, setSidebarPeek] = useState(false);
+    const expanded = !sidebarCollapsed || sidebarPeek;
+
+    const toggleSidebarCollapse = () => {
+        setSidebarCollapsed((prev) => {
+            const next = !prev;
+            try {
+                window.localStorage.setItem('meenitstrac.sidebar', next ? 'collapsed' : 'expanded');
+            } catch {
+                // localStorage unavailable (private mode, etc.) — collapse still works, just not persisted.
+            }
+            setSidebarPeek(false);
+            return next;
+        });
+    };
+
+    useEffect(() => {
+        if (!sidebarCollapsed) return undefined;
+        const handleMouseMove = (e) => {
+            if (e.clientX <= 14) setSidebarPeek(true);
+            else if (e.clientX > 280) setSidebarPeek(false);
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, [sidebarCollapsed]);
+
     // Dashboard sits above the Boards dropdown; the rest below it.
     const dashboardItem = { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') };
     const planningNav = [
@@ -34,13 +73,15 @@ export default function SidebarLayout({ header, children }) {
         { name: 'Profile', href: route('profile.edit'), icon: User, active: route().current('profile.*') },
     ];
 
-    const NavSection = ({ title, items }) => (
+    const NavSection = ({ title, items, expanded = true }) => (
         <div className="mb-4">
-            <div className="px-3 mb-2">
-                <span className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/40">
-                    {title}
-                </span>
-            </div>
+            {expanded && (
+                <div className="px-3 mb-2">
+                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/40 whitespace-nowrap">
+                        {title}
+                    </span>
+                </div>
+            )}
             <nav className="space-y-0.5">
                 {items.map((item) => {
                     const Icon = item.icon;
@@ -49,17 +90,18 @@ export default function SidebarLayout({ header, children }) {
                             key={item.name}
                             href={item.href}
                             onClick={() => setMobileMenuOpen(false)}
-                            className={`group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${item.active
+                            title={expanded ? undefined : item.name}
+                            className={`group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${expanded ? '' : 'justify-center px-2'} ${item.active
                                 ? 'bg-white/15 text-white'
                                 : 'text-white/70 hover:bg-white/10 hover:text-white'
                                 }`}
                         >
                             <Icon
-                                className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${item.active ? 'text-[var(--trac-accent)]' : 'text-white/50 group-hover:text-white/70'
+                                className={`h-[18px] w-[18px] flex-shrink-0 ${expanded ? 'mr-3' : ''} ${item.active ? 'text-[var(--trac-accent)]' : 'text-white/50 group-hover:text-white/70'
                                     }`}
                                 strokeWidth={item.active ? 2.2 : 1.8}
                             />
-                            {item.name}
+                            {expanded && <span className="whitespace-nowrap">{item.name}</span>}
                         </Link>
                     );
                 })}
@@ -67,41 +109,50 @@ export default function SidebarLayout({ header, children }) {
         </div>
     );
 
-    const itemClass = (active) =>
-        `group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
+    const itemClass = (active, expanded = true) =>
+        `group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${expanded ? '' : 'justify-center px-2'} ${active
             ? 'bg-white/15 text-white'
             : 'text-white/70 hover:bg-white/10 hover:text-white'}`;
 
-    const NavItem = ({ item }) => {
+    const NavItem = ({ item, expanded = true }) => {
         const Icon = item.icon;
         return (
-            <Link href={item.href} onClick={() => setMobileMenuOpen(false)} className={itemClass(item.active)}>
+            <Link href={item.href} onClick={() => setMobileMenuOpen(false)} title={expanded ? undefined : item.name} className={itemClass(item.active, expanded)}>
                 <Icon
-                    className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${item.active ? 'text-[var(--trac-accent)]' : 'text-white/50 group-hover:text-white/70'}`}
+                    className={`h-[18px] w-[18px] flex-shrink-0 ${expanded ? 'mr-3' : ''} ${item.active ? 'text-[var(--trac-accent)]' : 'text-white/50 group-hover:text-white/70'}`}
                     strokeWidth={item.active ? 2.2 : 1.8}
                 />
-                {item.name}
+                {expanded && <span className="whitespace-nowrap">{item.name}</span>}
             </Link>
         );
     };
 
     const openCreate = () => { setShowCreateProject(true); setMobileMenuOpen(false); };
 
-    const BoardsDropdown = () => {
+    const BoardsDropdown = ({ expanded = true }) => {
         const active = route().current('projects.*');
         const currentId = route().params?.project;
         return (
             <div>
-                <button type="button" onClick={() => setBoardsOpen((o) => !o)} className={`w-full ${itemClass(active)}`}>
+                <button
+                    type="button"
+                    onClick={() => setBoardsOpen((o) => !o)}
+                    title={expanded ? undefined : 'Boards'}
+                    className={`w-full ${itemClass(active, expanded)}`}
+                >
                     <FolderKanban
-                        className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${active ? 'text-[var(--trac-accent)]' : 'text-white/50 group-hover:text-white/70'}`}
+                        className={`h-[18px] w-[18px] flex-shrink-0 ${expanded ? 'mr-3' : ''} ${active ? 'text-[var(--trac-accent)]' : 'text-white/50 group-hover:text-white/70'}`}
                         strokeWidth={active ? 2.2 : 1.8}
                     />
-                    <span className="flex-1 text-left">Boards</span>
-                    <ChevronDown size={15} className={`text-white/50 transition-transform ${boardsOpen ? 'rotate-180' : ''}`} />
+                    {expanded && (
+                        <>
+                            <span className="flex-1 text-left whitespace-nowrap">Boards</span>
+                            <ChevronDown size={15} className={`text-white/50 transition-transform ${boardsOpen ? 'rotate-180' : ''}`} />
+                        </>
+                    )}
                 </button>
 
-                {boardsOpen && (
+                {expanded && boardsOpen && (
                     <div className="mt-0.5 space-y-0.5 pl-7">
                         {projects.length === 0 ? (
                             <button type="button" onClick={openCreate} className="flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white">
@@ -134,26 +185,52 @@ export default function SidebarLayout({ header, children }) {
         );
     };
 
-    const SidebarContent = () => (
+    const SidebarContent = ({ expanded = true, showToggle = false }) => (
         <div className="flex h-full flex-col">
             {/* Logo */}
-            <div className="flex h-16 shrink-0 items-center px-6">
-                <Link href="/" className="flex items-center gap-2">
+            <div className={`flex h-16 shrink-0 items-center justify-between ${expanded ? 'px-6' : 'px-2'}`}>
+                <Link href="/" className="flex items-center gap-2 overflow-hidden">
                     <TracLogo size={28} />
-                    <span className="text-xl font-bold tracking-tight text-white">MeenitsTrac</span>
+                    {expanded && <span className="text-xl font-bold tracking-tight text-white whitespace-nowrap">MeenitsTrac</span>}
                 </Link>
+                {showToggle && expanded && (
+                    <button
+                        type="button"
+                        onClick={toggleSidebarCollapse}
+                        aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        className="hidden lg:flex flex-shrink-0 items-center justify-center rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                    >
+                        <ChevronsLeft size={18} strokeWidth={1.75} />
+                    </button>
+                )}
             </div>
+            {showToggle && !expanded && (
+                <div className="flex justify-center pb-2">
+                    <button
+                        type="button"
+                        onClick={toggleSidebarCollapse}
+                        aria-label="Expand sidebar"
+                        className="hidden lg:flex flex-shrink-0 items-center justify-center rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                    >
+                        <ChevronsRight size={18} strokeWidth={1.75} />
+                    </button>
+                </div>
+            )}
 
             {/* Team switcher */}
             <div className="px-4 pb-3">
                 <Dropdown>
                     <Dropdown.Trigger>
-                        <button className="flex w-full items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-left transition-colors hover:bg-white/15">
+                        <button className={`flex w-full items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-left transition-colors hover:bg-white/15 ${expanded ? '' : 'justify-center px-2'}`}>
                             <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold" style={{ background: 'var(--trac-accent)', color: 'var(--trac-ink)' }}>
                                 {currentTeam?.name?.charAt(0)?.toUpperCase() ?? 'T'}
                             </span>
-                            <span className="flex-1 truncate text-sm font-semibold text-white">{currentTeam?.name ?? 'No team'}</span>
-                            <ChevronDown size={14} className="flex-shrink-0 text-white/50" />
+                            {expanded && (
+                                <>
+                                    <span className="flex-1 truncate text-sm font-semibold text-white">{currentTeam?.name ?? 'No team'}</span>
+                                    <ChevronDown size={14} className="flex-shrink-0 text-white/50" />
+                                </>
+                            )}
                         </button>
                     </Dropdown.Trigger>
                     <Dropdown.Content width="60">
@@ -176,33 +253,37 @@ export default function SidebarLayout({ header, children }) {
             </div>
 
             {/* Navigation sections */}
-            <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
+            <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 py-4">
                 <div className="mb-4">
-                    <div className="px-3 mb-2">
-                        <span className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/40">Planning</span>
-                    </div>
+                    {expanded && (
+                        <div className="px-3 mb-2">
+                            <span className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/40 whitespace-nowrap">Planning</span>
+                        </div>
+                    )}
                     <nav className="space-y-0.5">
-                        <NavItem item={dashboardItem} />
-                        <BoardsDropdown />
-                        {planningNav.map((item) => <NavItem key={item.name} item={item} />)}
+                        <NavItem item={dashboardItem} expanded={expanded} />
+                        <BoardsDropdown expanded={expanded} />
+                        {planningNav.map((item) => <NavItem key={item.name} item={item} expanded={expanded} />)}
                     </nav>
                 </div>
                 <div className="my-3 border-t border-white/10" />
-                <NavSection title="Settings" items={settingsNav} />
+                <NavSection title="Settings" items={settingsNav} expanded={expanded} />
             </div>
 
             {/* Bottom Profile */}
             <div className="border-t border-white/10 p-4">
                 <Dropdown>
                     <Dropdown.Trigger>
-                        <button className="flex w-full items-center justify-between rounded-lg px-3 py-2 transition-colors hover:bg-white/10">
+                        <button className={`flex w-full items-center rounded-lg px-3 py-2 transition-colors hover:bg-white/10 ${expanded ? 'justify-between' : 'justify-center px-2'}`}>
                             <div className="flex items-center truncate">
-                                <div className="trac-avatar trac-avatar-md" style={{ backgroundColor: 'var(--trac-accent)', color: 'var(--trac-ink)' }}>
+                                <div className="trac-avatar trac-avatar-md flex-shrink-0" style={{ backgroundColor: 'var(--trac-accent)', color: 'var(--trac-ink)' }}>
                                     {user.name.charAt(0)}
                                 </div>
-                                <span className="ml-3 truncate text-sm font-medium text-white">
-                                    {user.name}
-                                </span>
+                                {expanded && (
+                                    <span className="ml-3 truncate text-sm font-medium text-white">
+                                        {user.name}
+                                    </span>
+                                )}
                             </div>
                         </button>
                     </Dropdown.Trigger>
@@ -230,19 +311,24 @@ export default function SidebarLayout({ header, children }) {
                 />
             )}
 
-            {/* Mobile Sidebar */}
+            {/* Mobile Sidebar — always full width, no collapse (off-canvas drawer already hides/shows it) */}
             <div className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-[var(--trac-primary-950)] trac-brand-gradient transition-transform duration-300 ease-in-out lg:hidden ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}>
-                <SidebarContent />
+                <SidebarContent expanded={true} showToggle={false} />
             </div>
 
             {/* Desktop Sidebar */}
-            <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 trac-brand-gradient border-r border-[var(--trac-primary-800)]">
-                <SidebarContent />
+            <div
+                className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 trac-brand-gradient border-r border-[var(--trac-primary-800)] transition-all duration-300 ease-in-out ${expanded ? 'lg:w-64' : 'lg:w-20'
+                    } ${sidebarPeek ? 'shadow-2xl shadow-black/40 z-40' : ''}`}
+            >
+                <SidebarContent expanded={expanded} showToggle={true} />
             </div>
 
-            {/* Main Content wrapper */}
-            <div className="flex flex-1 flex-col lg:pl-64 overflow-hidden">
+            {/* Main Content wrapper — padding tracks the persisted collapse state, not the
+               transient peek, so hovering to peek the sidebar never reflows the page. */}
+            <div className={`flex flex-1 flex-col overflow-hidden transition-[padding] duration-300 ease-in-out ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
+                }`}>
                 {/* Mobile Header */}
                 <div className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm lg:hidden">
                     <button

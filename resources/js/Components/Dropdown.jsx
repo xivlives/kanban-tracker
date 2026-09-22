@@ -44,11 +44,18 @@ const Content = ({
     const { open, setOpen } = useContext(DropDownContext);
 
     let alignmentClasses = 'origin-top';
+    let positionClasses = 'mt-2';
 
     if (align === 'left') {
         alignmentClasses = 'ltr:origin-top-left rtl:origin-top-right start-0';
     } else if (align === 'right') {
         alignmentClasses = 'ltr:origin-top-right rtl:origin-top-left end-0';
+    } else if (align === 'top') {
+        // Grows upward from the trigger instead of downward — for triggers
+        // pinned to the bottom of the viewport (e.g. a sidebar footer),
+        // where a downward `mt-2` menu would overflow past the screen edge.
+        alignmentClasses = 'origin-bottom start-0';
+        positionClasses = 'bottom-full mb-2';
     }
 
     let widthClasses = '';
@@ -69,7 +76,7 @@ const Content = ({
                 leaveTo="opacity-0 scale-95"
             >
                 <div
-                    className={`absolute z-50 mt-2 rounded-md shadow-lg ${alignmentClasses} ${widthClasses}`}
+                    className={`absolute z-50 ${positionClasses} rounded-md shadow-lg ${alignmentClasses} ${widthClasses}`}
                     onClick={() => setOpen(false)}
                 >
                     <div
