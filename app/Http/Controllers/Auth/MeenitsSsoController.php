@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -16,7 +17,7 @@ use Throwable;
 /**
  * "Login with Meenits" — OAuth2 client flow against the MeenitsApp identity
  * provider. MeenitsApp owns identity; this controller mirrors a local Trac user
- * keyed by meenits_user_id and logs them in. See SSO_PLAN.md (Stages B & D).
+ * keyed by meenits_user_id and logs them in. See SSO_PLAN.md (Stages B, D, G).
  */
 class MeenitsSsoController extends Controller
 {
@@ -27,12 +28,7 @@ class MeenitsSsoController extends Controller
     }
 
     /**
-     * Handle the callback: resolve the local user, then log them in.
-     *
-     * Resolution order (identity-first):
-     *   1. existing user by meenits_user_id (already linked);
-     *   2. else existing user by email → link it (set meenits_user_id);  [Stage D]
-     *   3. else create a new user + personal team.
+     * Handle the callback for the OAuth2 authorization code grant.
      */
     public function callback(): RedirectResponse
     {
@@ -56,11 +52,101 @@ class MeenitsSsoController extends Controller
                 ->withErrors(['email' => 'Meenits did not return a usable profile.']);
         }
 
+        $this->resolveAndLoginUser($meenitsId, $email, $meenitsUser->getName() ?: $email);
+
+        // Pull the user's Meenits orgs so we can offer to join their workspaces (Stage F).
+        $this->cacheMeenitsOrganizations($meenitsUser->token);
+
+        return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    /**
+     * Handle direct login via OAuth2 password grant.
+     * Takes email/password, validates against MeenitsApp server-to-server.
+     */
+    public function passwordLogin(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        try {
+            // 1. Authenticate with MeenitsApp via password grant
+            $tokenResponse = Http::timeout(10)
+                ->asForm()
+                ->post((string) config('services.meenits.token_url'), [
+                    'grant_type' => 'password',
+                    'client_id' => config('services.meenits.password_client_id'),
+                    'client_secret' => config('services.meenits.password_client_secret'),
+                    'username' => $request->email,
+                    'password' => $request->password,
+                    'scope' => '',
+                ]);
+
+            if ($tokenResponse->failed()) {
+                // Avoid leaking if the email exists or not
+                return redirect()->route('login')
+                    ->withErrors(['email' => 'Email or password incorrect.']);
+            }
+
+            $token = $tokenResponse->json('access_token');
+
+            // 2. Fetch the user's profile
+            $userResponse = Http::timeout(10)
+                ->withToken($token)
+                ->acceptJson()
+                ->get((string) config('services.meenits.userinfo_url'));
+
+            if ($userResponse->failed()) {
+                return redirect()->route('login')
+                    ->withErrors(['email' => 'Could not fetch profile from Meenits.']);
+            }
+
+            $profile = $userResponse->json();
+            $meenitsId = $profile['id'] ?? null;
+            $email = $profile['email'] ?? null;
+            $name = $profile['name'] ?? $email;
+
+            if (! $meenitsId || ! $email) {
+                return redirect()->route('login')
+                    ->withErrors(['email' => 'Meenits did not return a usable profile.']);
+            }
+
+            // 3. Reuse the existing account resolution logic
+            $this->resolveAndLoginUser($meenitsId, $email, $name);
+
+            // 4. Fetch the user's Meenits orgs so we can offer to join their workspaces (Stage F).
+            $this->cacheMeenitsOrganizations($token);
+
+            return redirect()->intended(route('dashboard', absolute: false));
+
+        } catch (Throwable $e) {
+            Log::warning('Meenits password grant failed', [
+                'type' => $e::class,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Could not sign in with Meenits. Please try again.']);
+        }
+    }
+
+    /**
+     * Shared logic to find or create a user based on their Meenits identity and log them in.
+     * 
+     * Resolution order (identity-first):
+     *   1. existing user by meenits_user_id (already linked);
+     *   2. else existing user by email → link it (set meenits_user_id);  [Stage D]
+     *   3. else create a new user + personal team.
+     */
+    private function resolveAndLoginUser(int|string $meenitsId, string $email, string $name): void
+    {
         $user = User::where('meenits_user_id', $meenitsId)->first();
 
         if (! $user) {
             // Link an existing local account by email (first SSO login), or create one.
-            $user = DB::transaction(function () use ($meenitsUser, $meenitsId, $email) {
+            $user = DB::transaction(function () use ($name, $meenitsId, $email) {
                 $existing = User::where('email', $email)->lockForUpdate()->first();
 
                 if ($existing) {
@@ -73,7 +159,7 @@ class MeenitsSsoController extends Controller
                 }
 
                 $created = User::create([
-                    'name' => $meenitsUser->getName() ?: $email,
+                    'name' => $name,
                     'email' => $email,
                     'meenits_user_id' => $meenitsId,
                 ]);
@@ -92,11 +178,6 @@ class MeenitsSsoController extends Controller
         }
 
         Auth::login($user, remember: true);
-
-        // Pull the user's Meenits orgs so we can offer to join their workspaces (Stage F).
-        $this->cacheMeenitsOrganizations($meenitsUser->token);
-
-        return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**

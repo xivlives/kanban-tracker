@@ -25,6 +25,8 @@ Route::middleware('guest')->group(function () {
         ->name('auth.meenits.redirect');
     Route::get('auth/meenits/callback', [MeenitsSsoController::class, 'callback'])
         ->name('auth.meenits.callback');
+    Route::post('auth/meenits/password', [MeenitsSsoController::class, 'passwordLogin'])
+        ->name('auth.meenits.password');
 
     // SSO-only auth screens (no POST / password handlers by design).
     Route::get('login', [AuthenticatedSessionController::class, 'create'])

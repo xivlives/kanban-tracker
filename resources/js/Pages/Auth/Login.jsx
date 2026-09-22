@@ -1,12 +1,30 @@
+import Checkbox from '@/Components/Checkbox';
+import InputError from '@/Components/InputError';
+import InputLabel from '@/Components/InputLabel';
 import MeenitsSsoButton from '@/Components/MeenitsSsoButton';
+import PrimaryButton from '@/Components/PrimaryButton';
+import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 
 /**
- * SSO-only login (Atlassian model): MeenitsTrac has no local password. Identity is
- * owned by MeenitsApp — you sign in with your one Meenits account. See SSO_PLAN.md.
+ * MeenitsTrac Login
  */
-export default function Login({ status }) {
+export default function Login({ status, canResetPassword }) {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        email: '',
+        password: '',
+        remember: false,
+    });
+
+    const submit = (e) => {
+        e.preventDefault();
+
+        post(route('auth.meenits.password'), {
+            onFinish: () => reset('password'),
+        });
+    };
+
     return (
         <GuestLayout>
             <Head title="Log in" />
@@ -20,11 +38,84 @@ export default function Login({ status }) {
             <div className="mb-6">
                 <h1 className="text-lg font-semibold text-gray-900">Welcome back</h1>
                 <p className="mt-1 text-sm text-gray-500">
-                    One account for all of Meenits — sign in with Meenits to continue.
+                    Sign in to continue to MeenitsTrac.
                 </p>
             </div>
 
-            <MeenitsSsoButton label="Log in with Meenits" />
+            <form onSubmit={submit}>
+                <div>
+                    <InputLabel htmlFor="email" value="Email" />
+
+                    <TextInput
+                        id="email"
+                        type="email"
+                        name="email"
+                        value={data.email}
+                        className="mt-1 block w-full"
+                        autoComplete="username"
+                        isFocused={true}
+                        onChange={(e) => setData('email', e.target.value)}
+                    />
+
+                    <InputError message={errors.email} className="mt-2" />
+                </div>
+
+                <div className="mt-4">
+                    <InputLabel htmlFor="password" value="Password" />
+
+                    <TextInput
+                        id="password"
+                        type="password"
+                        name="password"
+                        value={data.password}
+                        className="mt-1 block w-full"
+                        autoComplete="current-password"
+                        onChange={(e) => setData('password', e.target.value)}
+                    />
+
+                    <InputError message={errors.password} className="mt-2" />
+                </div>
+
+                <div className="mt-4 block">
+                    <label className="flex items-center">
+                        <Checkbox
+                            name="remember"
+                            checked={data.remember}
+                            onChange={(e) =>
+                                setData('remember', e.target.checked)
+                            }
+                        />
+                        <span className="ms-2 text-sm text-gray-600">
+                            Remember me
+                        </span>
+                    </label>
+                </div>
+
+                <div className="mt-4 flex items-center justify-end">
+                    {canResetPassword && (
+                        <Link
+                            href={route('password.request')}
+                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        >
+                            Forgot your password?
+                        </Link>
+                    )}
+
+                    <PrimaryButton className="ms-4" disabled={processing}>
+                        Log in
+                    </PrimaryButton>
+                </div>
+            </form>
+
+            <div className="my-6 flex items-center gap-3">
+                <span className="h-px flex-1 bg-gray-200" />
+                <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                    or
+                </span>
+                <span className="h-px flex-1 bg-gray-200" />
+            </div>
+
+            <MeenitsSsoButton label="Continue with Meenits SSO" />
         </GuestLayout>
     );
 }

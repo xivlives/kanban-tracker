@@ -49,6 +49,8 @@ return [
     'meenits' => [
         'client_id' => env('MEENITS_CLIENT_ID'),
         'client_secret' => env('MEENITS_CLIENT_SECRET'),
+        'password_client_id' => env('MEENITS_PASSWORD_GRANT_CLIENT_ID'),
+        'password_client_secret' => env('MEENITS_PASSWORD_GRANT_CLIENT_SECRET'),
         'redirect' => env('MEENITS_REDIRECT_URI', 'https://trac.meenits.app/auth/meenits/callback'),
         'authorize_url' => env('MEENITS_AUTHORIZE_URL', 'https://app.meenits.app/oauth/authorize'),
         'token_url' => env('MEENITS_TOKEN_URL', 'https://app.meenits.app/oauth/token'),
